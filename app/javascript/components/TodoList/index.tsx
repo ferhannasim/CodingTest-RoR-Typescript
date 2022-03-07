@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, {useState, useEffect } from "react";
 import { Container, ListGroup, Form } from "react-bootstrap";
 import { ResetButton } from "./uiComponent";
 import axios from "axios";
+import { createFalse } from "typescript";
 
 type TodoItem = {
   id: number;
@@ -14,6 +15,10 @@ type Props = {
 };
 
 const TodoList: React.FC<Props> = ({ todoItems }) => {
+
+  // todoItems list state
+  const [checkBoxState,setCheckBoxState] = useState(todoItems);
+
   useEffect(() => {
     const token = document.querySelector(
       "[name=csrf-token]"
@@ -23,8 +28,17 @@ const TodoList: React.FC<Props> = ({ todoItems }) => {
 
   const checkBoxOnCheck = (
     e: React.ChangeEvent<HTMLInputElement>,
-    todoItemId: number
+    todoItemId: number,
+    itemIndex: number
   ): void => {
+
+    //checkbox state handling ----start
+    let newStates = checkBoxState.map((curr,index) =>{
+        return index === itemIndex ? {...curr, checked: !(curr.checked)} : curr
+    })
+    setCheckBoxState(newStates);
+    //checkbox state handling ----end
+
     axios.post("/todo", {
       id: todoItemId,
       checked: e.target.checked,
@@ -32,20 +46,32 @@ const TodoList: React.FC<Props> = ({ todoItems }) => {
   };
 
   const resetButtonOnClick = (): void => {
-    axios.post("/reset").then(() => location.reload());
+
+    //reseting all checkboxes---start
+    let newState = checkBoxState.map(curr =>{
+        return {...curr, checked: false}
+    })
+    setCheckBoxState(newState);
+    // reseting all checboxes----end
+
+    axios.post("/reset")
+    .catch(err =>{
+      console.log("Oops something went wrong with server !!", err)
+    });
   };
+
 
   return (
     <Container>
       <h3>2022 Wish List</h3>
       <ListGroup>
-        {todoItems.map((todo) => (
+        {todoItems.map((todo,index) => (
           <ListGroup.Item key={todo.id}>
             <Form.Check
               type="checkbox"
               label={todo.title}
-              checked={todo.checked}
-              onChange={(e) => checkBoxOnCheck(e, todo.id)}
+              onChange={(e) => checkBoxOnCheck(e, todo.id,index)}
+              checked = {checkBoxState[index].checked}
             />
           </ListGroup.Item>
         ))}
